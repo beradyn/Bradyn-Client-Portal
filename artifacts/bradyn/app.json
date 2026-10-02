@@ -4,20 +4,20 @@
     "slug": "bradyn",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/bradyn-mark.png",
+    "icon": "./assets/images/beradyn-logo.png",
     "scheme": "bradyn",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "backgroundColor": "#050608",
       "resizeMode": "contain",
-      "image": "./assets/images/bradyn-mark.png"
+      "image": "./assets/images/beradyn-logo.png"
     },
     "ios": {
       "supportsTablet": false
     },
     "android": {},
     "web": {
-      "favicon": "./assets/images/bradyn-mark.png"
+      "favicon": "./assets/images/beradyn-logo.png"
     },
     "plugins": ["expo-router"],
     "experiments": {

@@ -69,9 +69,9 @@ export function BrandHeader({
     <View style={styles.brandHeader}>
       <View style={styles.brandLeft}>
         <Image
-          source={require('../assets/images/bradyn-mark.png')}
+          source={require('../assets/images/beradyn-logo.png')}
           style={styles.brandIcon}
-          resizeMode="cover"
+          resizeMode="contain"
         />
         <View>
           <Text style={[styles.brandName, { color: colors.foreground }]}>

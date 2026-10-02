@@ -14,7 +14,9 @@ import {
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { DemoProvider } from '@/components/DemoProvider';
+import { PortalProvider } from '@/components/PortalProvider';
+import { ThemeProvider } from '@/components/ThemeProvider';
+import { useThemeMode } from '@/components/ThemeProvider';
 import { useColors } from '@/hooks/useColors';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -24,9 +26,10 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const colors = useColors();
+  const { mode } = useThemeMode();
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -61,17 +64,19 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <DemoProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
-          </DemoProvider>
-        </QueryClientProvider>
-      </ErrorBoundary>
+      <ThemeProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <PortalProvider>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <KeyboardProvider>
+                  <RootLayoutNav />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </PortalProvider>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

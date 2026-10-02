@@ -25,3 +25,6 @@ timeoutMs = 20000
 EXPO_PUBLIC_SUPABASE_PROJECT_ID = "puqoabypleblzqyqaixo"
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_-jZPW8glWiFK2Bbb9cgmhg_nKXhz44D"
 EXPO_PUBLIC_SUPABASE_URL = "https://puqoabypleblzqyqaixo.supabase.co"
+
+[nix]
+channel = "stable-25_05"

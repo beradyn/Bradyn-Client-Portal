@@ -1,9 +1,9 @@
-import { useColorScheme } from 'react-native';
 import colors from '@/constants/colors';
+import { useThemeMode } from '@/components/ThemeProvider';
 
-/** Returns the design tokens for the active color scheme. */
+/** Returns the design tokens for the user's saved appearance setting. */
 export function useColors() {
-  const scheme = useColorScheme();
-  const palette = scheme === 'dark' ? colors.dark : colors.light;
+  const { mode } = useThemeMode();
+  const palette = mode === 'dark' ? colors.dark : colors.light;
   return { ...palette, radius: colors.radius };
 }

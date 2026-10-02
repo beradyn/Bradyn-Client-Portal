@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
@@ -7,7 +7,7 @@ import { Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Redirect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useDemo } from '@/components/DemoProvider';
+import { usePortal } from '@/components/PortalProvider';
 import { useColors } from '@/hooks/useColors';
 
 function NativeAdminTabs() {
@@ -124,7 +124,19 @@ function ClassicAdminTabs() {
 }
 
 export default function AdminTabsLayout() {
-  const { role } = useDemo();
+  const { role, initialized } = usePortal();
+  const colors = useColors();
+  if (!initialized) {
+    return (
+      <View style={[styles.loading, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
   if (role !== 'admin') return <Redirect href="/(auth)/login" />;
   return isLiquidGlassAvailable() ? <NativeAdminTabs /> : <ClassicAdminTabs />;
 }
+
+const styles = StyleSheet.create({
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+});
