@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/bradyn/"
+title = "Bradyn"
+description = "A native client portal and admin dashboard for Bradyn web design clients to track websites and projects, submit requests, message the team, and manage account details."
+version = "1.0.0"
+id = "artifacts/bradyn"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/bradyn/" ]
+localPort = 20933
+
+[services.development]
+run = "pnpm --filter @workspace/bradyn run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bradyn", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/bradyn", "run", "serve" ]
+
+[services.env]
+PORT = "20933"
+BASE_PATH = "/bradyn/"

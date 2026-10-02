@@ -1,0 +1,41 @@
+Build a polished mobile app called Bradyn using Expo, React Native, TypeScript, Expo Router, and Supabase Auth/Database. Bradyn is a web design company for small businesses. The app is a client portal and admin dashboard. This is V1, so only build authentication, clients, projects, websites, requests, messaging, subscriptions, and settings. Do NOT build Stripe, hosting, domain management, deployments, analytics, or AI integrations yet.
+
+DESIGN: Create a premium modern SaaS-style interface with Bradyn branding, dark/light themes, clean typography, rounded cards, subtle borders, smooth animations, responsive iOS/Android layouts, and native-feeling navigation. Avoid generic admin templates.
+
+AUTH: Use Supabase Auth. Create splash, login, signup, forgot/reset password, email verification, and logout. Support two roles: client and admin. Route users to the correct dashboard after login and protect admin routes. Use Supabase Row Level Security so clients can only access their own data.
+
+CLIENT APP: Use bottom tabs: Home, Website, Requests, Messages, Account.
+
+CLIENT HOME: Show personalized greeting, business name, website card with name/URL/status and Visit Website button, project progress/current stage, subscription plan/price/status/next billing date, recent activity, and quick actions for Request Change, Message Bradyn, View Website, and View Project.
+
+WEBSITE: Show website name, URL, status, project, progress, last update, and preview URL. Include Visit Website, Request Change, and View Project buttons.
+
+PROJECTS: Show project name, description, progress, current stage, milestones, and activity. Stages: Planning, Design, Development, Review, Launch. Clients can view but not edit projects.
+
+REQUESTS: Clients can create and view requests. Types: Website Change, Content Update, Bug, New Feature, Domain, Hosting, Other. Fields: title, description, priority, attachment when practical. Statuses: Submitted, In Progress, Waiting for Client, Completed. Each request has a detail screen with comments/messages.
+
+MESSAGING: Create client-to-Bradyn messaging with conversation list, chat screen, sending messages, timestamps, read/unread status, and attachments when practical. Use Supabase Realtime where practical. Each client should have a support conversation.
+
+SUBSCRIPTION: Show plan, price, billing period, status, and next billing date. Do not connect Stripe yet, but create the UI/database structure for future Stripe integration. Change Plan and Cancel Subscription should open a confirmation/request flow for now.
+
+ACCOUNT: Show profile photo, name, email, business name, phone, theme, notification settings, security, and logout.
+
+ADMIN APP: Use bottom tabs: Dashboard, Clients, Projects, Requests, Account.
+
+ADMIN DASHBOARD: Show total clients, active projects, open requests, active websites, recent activity, recent requests, recent clients, and projects needing attention.
+
+CLIENT MANAGEMENT: Admins can search, view, add, and edit clients. Client details should show business/contact information, website, project, subscription, requests, messages, and activity.
+
+PROJECT MANAGEMENT: Admins can create, edit, and delete projects, assign projects to clients, update status/progress, and manage milestones/tasks. Statuses: Planning, Design, Development, Review, Launch, Completed. Clients should see updates immediately.
+
+WEBSITE MANAGEMENT: Admins can create and manage websites with website name, client, URL, preview URL, status, and project. Statuses: Building, Review, Live, Offline. Do not implement real hosting/deployment integrations.
+
+REQUEST MANAGEMENT: Admins can view all requests, filter/search them, change status and priority, assign requests, reply to clients, add internal notes, and mark requests completed. Filters: All, New, In Progress, Waiting, Completed.
+
+ADMIN MESSAGES: Create an admin inbox showing client, business, last message, unread count, and time. Admins can open conversations and reply.
+
+ADMIN ACCOUNT: Include profile, company information, notifications, theme, security, and logout.
+
+DATABASE: Create Supabase tables for profiles, businesses, websites, projects, project_milestones, requests, conversations, messages, subscriptions, and activity. Use proper relationships, timestamps, and Row Level Security. Clients can only access records belonging to their business. Admins can manage appropriate records.
+
+IMPORTANT: Make this a functional V1, not just a UI mockup. Authentication, role-based routing, Supabase data, CRUD operations, projects, websites, requests, messaging, and subscription information should work. Use reusable components and clean architecture. Do not add unnecessary features or external integrations. Prioritize polished UI, reliable navigation, secure authentication, and a scalable foundation for future Bradyn features.
