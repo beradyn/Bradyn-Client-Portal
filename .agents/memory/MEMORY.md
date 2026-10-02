@@ -1,0 +1,1 @@
+- [Bradyn demo scope](bradyn-demo-scope.md) — keep the app demo-only with fictional data and temporary client/admin logins; no real database for now.
