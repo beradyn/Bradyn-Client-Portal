@@ -3,10 +3,12 @@ name: Bradyn access and data
 description: Durable authentication and data-access decisions for the Bradyn Expo portal.
 ---
 
-Bradyn uses Supabase Auth and RLS-protected Supabase tables for real client and admin portal data. Public sign-up is disabled; an administrator creates or invites each account. The authenticated profile determines the role and linked client record. Users cannot choose or elevate their own role. Admin promotion must happen through a trusted Supabase process, never the client app.
+Bradyn uses Lovable Cloud's Supabase-compatible Auth and RLS-protected tables for real client and admin portal data. The user has no direct PostgreSQL connection string; schema changes must be run through Lovable Cloud's SQL tools or supplied as SQL for the user to execute. Do not request a direct DB URI.
 
-Do not seed fictional records or include temporary login credentials. Use only the Supabase publishable key in the mobile app; never place a service-role key in client code.
+Public sign-up is disabled; an administrator creates or invites each account. The authenticated profile determines the role and linked client record. Users cannot choose or elevate their own role. Admin promotion must happen through trusted SQL, never the client app.
 
-**Why:** the user superseded the earlier demo-only boundary and selected administrator-managed Supabase access for both portal roles.
+Do not seed fictional records or include temporary login credentials. Use only the public client key in the mobile app; never place a service-role key in client code.
 
-**How to apply:** keep future portal data changes behind the existing RLS policies, link client accounts by their Supabase profile, and provision or promote accounts only through trusted administration.
+**Why:** the user selected administrator-managed access for both roles and explicitly said the project uses Lovable Cloud without a direct PostgreSQL connection string.
+
+**How to apply:** keep portal data changes behind RLS, link client accounts by profile, provision or promote users through trusted administration, and provide migrations through Lovable Cloud's SQL workflow.

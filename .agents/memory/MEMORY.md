@@ -1,1 +1,1 @@
-- [Bradyn access and data](bradyn-demo-scope.md) — use Supabase with admin-provisioned accounts, profile-based roles, and no seeded demo records.
+- [Bradyn access and data](bradyn-demo-scope.md) — use Lovable Cloud auth/data, admin-provisioned accounts, profile roles, and no seeded demo records.
