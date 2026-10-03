@@ -43,6 +43,7 @@ create table if not exists public.projects (
   description text not null default '',
   status text not null default 'Planning',
   stage text not null default 'Planning',
+  progress integer not null default 0 check (progress between 0 and 100),
   milestones jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

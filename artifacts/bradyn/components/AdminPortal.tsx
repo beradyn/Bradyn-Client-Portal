@@ -31,14 +31,15 @@ import {
   TextField,
 } from '@/components/PortalPrimitives';
 import {
-  DemoClient,
-  DemoMessage,
-  DemoProject,
-  DemoRequest,
+  PortalClient,
+  PortalMessage,
+  PortalProject,
+  PortalRequest,
   RequestStatus,
-  useDemo,
-} from '@/components/DemoProvider';
+  usePortal,
+} from '@/components/PortalProvider';
 import { useColors } from '@/hooks/useColors';
+import { useThemeMode } from '@/components/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAvoidingView as ControllerKeyboardAvoidingView } from 'react-native-keyboard-controller';
 
@@ -96,11 +97,11 @@ function ConversationModal({
   visible,
   onClose,
 }: {
-  client: DemoClient | null;
+  client: PortalClient | null;
   visible: boolean;
   onClose: () => void;
 }) {
-  const { data, sendMessage, markMessagesRead } = useDemo();
+  const { data, sendMessage, markMessagesRead } = usePortal();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState('');
@@ -243,7 +244,7 @@ function ConversationBubble({
   message,
   mine,
 }: {
-  message: DemoMessage;
+  message: PortalMessage;
   mine: boolean;
 }) {
   const colors = useColors();
@@ -285,9 +286,9 @@ function ConversationBubble({
 }
 
 export function AdminDashboardScreen() {
-  const { data } = useDemo();
+  const { data } = usePortal();
   const colors = useColors();
-  const [conversationClient, setConversationClient] = useState<DemoClient | null>(null);
+  const [conversationClient, setConversationClient] = useState<PortalClient | null>(null);
   const activeProjects = data.projects.filter(
     (project) => project.status !== 'Completed',
   ).length;
@@ -473,12 +474,9 @@ export function AdminDashboardScreen() {
           })
         ) : (
           <Panel>
-            <EmptyState icon="check-circle" title="All projects on track" description="No projects need attention right now." />
+            <EmptyState icon="layers" title="No projects yet" description="Projects added for your clients will appear here." />
           </Panel>
         )}
-        <Text style={[styles.demoCaption, { color: colors.mutedForeground }]}>
-          Admin demo · Fictional clients and project activity
-        </Text>
       </Page>
       <ConversationModal
         client={conversationClient}
@@ -493,7 +491,7 @@ function ClientRow({
   client,
   onPress,
 }: {
-  client: DemoClient;
+  client: PortalClient;
   onPress: () => void;
 }) {
   const colors = useColors();
@@ -557,15 +555,15 @@ function AddClientModal({
           <View style={styles.sheetHeader}>
             <View>
               <Text style={[styles.sheetTitle, { color: colors.foreground }]}>Add a client</Text>
-              <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Create a sample client workspace.</Text>
+              <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Create a client record. Sign-in access is managed separately in Supabase.</Text>
             </View>
             <IconButton icon="x" onPress={close} accessibilityLabel="Close" />
           </View>
           <ScrollView contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled">
-            <TextField label="Contact name" placeholder="Jamie Parker" value={name} onChangeText={setName} />
+            <TextField label="Contact name" placeholder="Full name" value={name} onChangeText={setName} />
             <TextField label="Business" placeholder="Business name" value={business} onChangeText={setBusiness} />
-            <TextField label="Email" placeholder="name@business.demo" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-            <TextField label="Phone (optional)" placeholder="(555) 555-0100" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+            <TextField label="Email" placeholder="name@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+            <TextField label="Phone (optional)" placeholder="Phone number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
             <ActionButton label="Create client" icon="user-plus" onPress={submit} />
           </ScrollView>
         </View>
@@ -579,11 +577,11 @@ function ClientDetailsModal({
   visible,
   onClose,
 }: {
-  client: DemoClient | null;
+  client: PortalClient | null;
   visible: boolean;
   onClose: () => void;
 }) {
-  const { data, updateClient } = useDemo();
+  const { data, updateClient } = usePortal();
   const colors = useColors();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(client?.name ?? '');
@@ -599,7 +597,7 @@ function ClientDetailsModal({
   const requests = data.requests.filter((item) => item.clientId === client.id);
 
   const toggleStatus = () => {
-    const statuses: DemoClient['websiteStatus'][] = ['Building', 'Review', 'Live', 'Offline'];
+    const statuses: PortalClient['websiteStatus'][] = ['Building', 'Review', 'Live', 'Offline'];
     const index = statuses.indexOf(client.websiteStatus);
     updateClient(client.id, { websiteStatus: statuses[(index + 1) % statuses.length] });
   };
@@ -614,7 +612,6 @@ function ClientDetailsModal({
       previewUrl: preview.trim() || client.previewUrl,
     });
     setEditing(false);
-    Alert.alert('Client updated', 'The demo client details have been saved.');
   };
 
   return (
@@ -693,7 +690,8 @@ function ClientDetailsModal({
             {project ? <ProgressBar value={project.progress} /> : null}
             <View style={[styles.thinDivider, { backgroundColor: colors.border }]} />
             <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-              {requests.length} support {requests.length === 1 ? 'request' : 'requests'} · {client.subscriptionName} · ${client.subscriptionPrice}/mo
+              {requests.length} support {requests.length === 1 ? 'request' : 'requests'} · {client.subscriptionName}
+              {client.subscriptionPrice === null ? '' : ` · $${client.subscriptionPrice.toFixed(2)}/mo`}
             </Text>
           </Panel>
           {editing ? <ActionButton label="Save client details" icon="check" onPress={save} /> : null}
@@ -704,7 +702,7 @@ function ClientDetailsModal({
 }
 
 export function AdminClientsScreen() {
-  const { data, addClient } = useDemo();
+  const { data, addClient } = usePortal();
   const colors = useColors();
   const [query, setQuery] = useState('');
   const [showAdd, setShowAdd] = useState(false);
@@ -759,9 +757,6 @@ export function AdminClientsScreen() {
             <EmptyState icon="users" title="No matches" description="Try a different name or business." />
           </Panel>
         )}
-        <Text style={[styles.demoCaption, { color: colors.mutedForeground }]}>
-          Added clients and edits are stored only on this device.
-        </Text>
       </Page>
       <AddClientModal
         visible={showAdd}
@@ -785,14 +780,14 @@ function AddProjectModal({
   onAdd,
 }: {
   visible: boolean;
-  clients: DemoClient[];
+  clients: PortalClient[];
   onClose: () => void;
   onAdd: (name: string, clientId: string, description: string) => void;
 }) {
   const colors = useColors();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [clientId, setClientId] = useState(clients[0]?.id ?? 'northstar');
+  const [clientId, setClientId] = useState(clients[0]?.id ?? '');
   const submit = () => {
     if (!name.trim() || !clientId) {
       Alert.alert('Add project details', 'A project name and client are required.');
@@ -837,8 +832,8 @@ function AddProjectModal({
   );
 }
 
-function ProjectAdminCard({ project }: { project: DemoProject }) {
-  const { data, updateProject, toggleMilestone, addMilestone, deleteProject } = useDemo();
+function ProjectAdminCard({ project }: { project: PortalProject }) {
+  const { data, updateProject, toggleMilestone, addMilestone, deleteProject } = usePortal();
   const colors = useColors();
   const [expanded, setExpanded] = useState(false);
   const [newMilestone, setNewMilestone] = useState('');
@@ -955,7 +950,7 @@ function ProjectAdminCard({ project }: { project: DemoProject }) {
             small
             variant="outline"
             onPress={() =>
-              Alert.alert('Delete this project?', 'This removes the demo project from this device.', [
+              Alert.alert('Delete this project?', 'This permanently removes the project and its milestones from the client portal.', [
                 { text: 'Keep project', style: 'cancel' },
                 {
                   text: 'Delete',
@@ -972,7 +967,7 @@ function ProjectAdminCard({ project }: { project: DemoProject }) {
 }
 
 export function AdminProjectsScreen() {
-  const { data, addProject } = useDemo();
+  const { data, addProject } = usePortal();
   const colors = useColors();
   const [showAdd, setShowAdd] = useState(false);
   const active = data.projects.filter((project) => project.status !== 'Completed').length;
@@ -1031,7 +1026,7 @@ export function AdminProjectsScreen() {
 }
 
 export function AdminRequestsScreen() {
-  const { data, updateRequest, addComment } = useDemo();
+  const { data, updateRequest, addComment } = usePortal();
   const colors = useColors();
   const [filter, setFilter] = useState('All');
   const [query, setQuery] = useState('');
@@ -1057,7 +1052,7 @@ export function AdminRequestsScreen() {
     [data.clients, data.requests, filter, query],
   );
 
-  const addResponse = (request: DemoRequest) => {
+  const addResponse = (request: PortalRequest) => {
     const body = draft.trim();
     if (!body) return;
     addComment(request.id, body, 'admin', internal);
@@ -1242,8 +1237,9 @@ export function AdminRequestsScreen() {
 }
 
 export function AdminAccountScreen() {
-  const { signOut, data } = useDemo();
+  const { signOut, data, profile, user } = usePortal();
   const colors = useColors();
+  const { mode, toggleMode } = useThemeMode();
   const [notifications, setNotifications] = useState(true);
   return (
     <Page>
@@ -1255,15 +1251,15 @@ export function AdminAccountScreen() {
       />
       <Panel style={styles.profilePanel}>
         <View style={styles.profileTop}>
-          <Avatar initials="TB" size={56} />
+          <Avatar initials={initials(profile?.fullName || 'Admin')} size={56} />
           <View style={styles.profileCopy}>
-            <Text style={[styles.profileName, { color: colors.foreground }]}>Taylor Brooks</Text>
+            <Text style={[styles.profileName, { color: colors.foreground }]}>{profile?.fullName || 'Administrator'}</Text>
             <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Studio administrator</Text>
           </View>
           <StatusTag label="Admin" />
         </View>
-        <DataRow label="Email" value="taylor@bradyn.demo" icon="mail" />
-        <DataRow label="Studio" value="Bradyn Digital" icon="briefcase" last />
+        <DataRow label="Email" value={profile?.email || user?.email || 'Not available'} icon="mail" />
+        <DataRow label="Studio" value="Bradyn" icon="briefcase" last />
       </Panel>
       <SectionHeading title="Studio" />
       <Panel>
@@ -1290,24 +1286,34 @@ export function AdminAccountScreen() {
           </Pressable>
         </View>
         <View style={[styles.thinDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.preferenceRow}>
+        <Pressable
+          accessibilityRole="switch"
+          accessibilityState={{ checked: mode === 'light' }}
+          testID="appearance-toggle"
+          onPress={toggleMode}
+          style={styles.preferenceRow}
+        >
           <View style={[styles.preferenceIcon, { backgroundColor: colors.secondary }]}>
-            <Feather name="moon" size={16} color={colors.primary} />
+            <Feather name={mode === 'light' ? 'sun' : 'moon'} size={16} color={colors.primary} />
           </View>
           <View style={styles.preferenceCopy}>
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Appearance</Text>
-            <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Dark · always on</Text>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Light mode</Text>
+            <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+              {mode === 'light' ? 'On · dark mode is also available' : 'Off · dark mode is active'}
+            </Text>
           </View>
-          <Feather name="check" size={17} color={colors.primary} />
-        </View>
+          <View style={[styles.switchTrack, { backgroundColor: mode === 'light' ? colors.primary : colors.secondary }]}>
+            <View style={[styles.switchThumb, mode === 'light' ? styles.switchThumbOn : null]} />
+          </View>
+        </Pressable>
         <View style={[styles.thinDivider, { backgroundColor: colors.border }]} />
         <View style={styles.preferenceRow}>
           <View style={[styles.preferenceIcon, { backgroundColor: colors.secondary }]}>
             <Feather name="shield" size={16} color={colors.primary} />
           </View>
           <View style={styles.preferenceCopy}>
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Demo access</Text>
-            <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Local sample accounts only</Text>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Account security</Text>
+            <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Supabase Auth · admin role from your profile</Text>
           </View>
         </View>
       </Panel>
@@ -1320,9 +1326,6 @@ export function AdminAccountScreen() {
           router.replace('/(auth)/login' as Href);
         }}
       />
-      <Text style={[styles.demoCaption, { color: colors.mutedForeground }]}>
-        Sign out to return to demo role selection.
-      </Text>
     </Page>
   );
 }
@@ -1352,7 +1355,6 @@ const styles = StyleSheet.create({
   unreadNumber: { fontSize: 9, fontFamily: 'Inter_700Bold' },
   attentionPanel: { gap: 10 },
   projectCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  demoCaption: { textAlign: 'center', fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: -7 },
   conversationScreen: { flex: 1 },
   conversationHeader: { paddingHorizontal: 18, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   conversationHeaderTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 },

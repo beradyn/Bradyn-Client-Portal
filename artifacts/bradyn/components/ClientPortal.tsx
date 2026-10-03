@@ -4,6 +4,7 @@ import {
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -34,13 +35,14 @@ import {
   TextField,
 } from '@/components/PortalPrimitives';
 import {
-  DemoMessage,
-  DemoRequest,
+  PortalMessage,
+  PortalRequest,
   RequestPriority,
   RequestType,
-  useDemo,
-} from '@/components/DemoProvider';
+  usePortal,
+} from '@/components/PortalProvider';
 import { useColors } from '@/hooks/useColors';
+import { useThemeMode } from '@/components/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAvoidingView as ControllerKeyboardAvoidingView } from 'react-native-keyboard-controller';
 
@@ -67,6 +69,17 @@ function initial(name: string) {
     .join('')
     .slice(0, 2)
     .toUpperCase();
+}
+
+function openWebsite(url: string) {
+  if (!url.trim()) {
+    Alert.alert('Website link not set', 'A website address has not been added to this client record.');
+    return;
+  }
+  const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+  void Linking.openURL(normalized).catch(() => {
+    Alert.alert('Could not open website', 'Check that the website address is valid.');
+  });
 }
 
 function ClientBrand({ unread = false }: { unread?: boolean }) {
@@ -118,9 +131,9 @@ function ActivityItem({
 }
 
 export function ClientHomeScreen() {
-  const { data, addRequest } = useDemo();
+  const { data, currentClientId, addRequest } = usePortal();
   const colors = useColors();
-  const client = data.clients.find((item) => item.id === 'northstar') ?? data.clients[0];
+  const client = data.clients.find((item) => item.id === currentClientId);
   const project = data.projects.find((item) => item.id === client?.projectId);
   const requests = data.requests.filter((item) => item.clientId === client?.id);
   const latestMessage = [...data.messages]
@@ -165,12 +178,7 @@ export function ClientHomeScreen() {
             label="View website"
             icon="arrow-up-right"
             small
-            onPress={() =>
-              Alert.alert(
-                'Demo website',
-                'This sample website link is for the Bradyn preview only.',
-              )
-            }
+            onPress={() => openWebsite(client.websiteUrl)}
           />
           <ActionButton
             label="Details"
@@ -265,7 +273,11 @@ export function ClientHomeScreen() {
               {client.subscriptionName}
             </Text>
             <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-              ${client.subscriptionPrice} / month · Renews {client.nextBilling}
+              {client.subscriptionPrice === null
+                ? client.subscriptionName
+                : `$${client.subscriptionPrice.toFixed(2)} / month`}
+              {' · Renews '}
+              {client.nextBilling}
             </Text>
           </View>
         </View>
@@ -289,7 +301,6 @@ export function ClientHomeScreen() {
               'Normal',
               client.id,
             );
-            Alert.alert('Request started', 'Your new request has been added to the portal.');
             clientRoute('/(client)/requests');
           }}
           style={[styles.quickAction, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -327,28 +338,25 @@ export function ClientHomeScreen() {
         <ActivityItem
           icon="message-circle"
           title={latestMessage ? 'Bradyn replied to your message' : 'Project is moving forward'}
-          detail={latestMessage?.body ?? 'Your latest build is in development.'}
-          time={latestMessage?.time ?? 'Today'}
+          detail={latestMessage?.body ?? 'No messages yet.'}
+          time={latestMessage?.time ?? ''}
         />
         <View style={[styles.softDivider, { backgroundColor: colors.border }]} />
         <ActivityItem
           icon="check-circle"
-          title={requests[0]?.title ?? 'Project update'}
-          detail={`${requests[0]?.status ?? 'In Progress'} · ${requests[0]?.type ?? 'Website Change'}`}
-          time={requests[0]?.createdAt ?? 'Today'}
+          title={requests[0]?.title ?? 'No requests yet'}
+          detail={requests[0] ? `${requests[0].status} · ${requests[0].type}` : 'Submit a request when you need help.'}
+          time={requests[0]?.createdAt ?? ''}
         />
       </Panel>
-      <Text style={[styles.demoFootnote, { color: colors.mutedForeground }]}>
-        Demo portal · Sample project information
-      </Text>
     </Page>
   );
 }
 
 export function ClientWebsiteScreen() {
-  const { data } = useDemo();
+  const { data, currentClientId } = usePortal();
   const colors = useColors();
-  const client = data.clients.find((item) => item.id === 'northstar') ?? data.clients[0];
+  const client = data.clients.find((item) => item.id === currentClientId);
   const project = data.projects.find((item) => item.id === client?.projectId);
   if (!client) return null;
 
@@ -378,7 +386,12 @@ export function ClientWebsiteScreen() {
         <View style={[styles.softDivider, { backgroundColor: colors.border }]} />
         <DataRow label="Live website" value={client.websiteUrl} icon="external-link" />
         <DataRow label="Preview link" value={client.previewUrl} icon="eye" />
-        <DataRow label="Last updated" value="Today, 10:12 AM" icon="clock" last />
+        <DataRow
+          label="Last updated"
+          value={project?.updatedAt ?? client.lastActivity}
+          icon="clock"
+          last
+        />
       </Panel>
       <Panel style={styles.projectPanel}>
         <View style={styles.inlineHeading}>
@@ -418,12 +431,7 @@ export function ClientWebsiteScreen() {
           label="Visit website"
           icon="arrow-up-right"
           small
-          onPress={() =>
-            Alert.alert(
-              'Demo website',
-              'This sample website link is for the Bradyn preview only.',
-            )
-          }
+          onPress={() => openWebsite(client.websiteUrl)}
         />
         <ActionButton
           label="Request a change"
@@ -557,7 +565,7 @@ function RequestRow({
   onPress,
   onComment,
 }: {
-  request: DemoRequest;
+  request: PortalRequest;
   expanded: boolean;
   onPress: () => void;
   onComment: (body: string) => void;
@@ -665,7 +673,7 @@ function RequestRow({
 }
 
 export function ClientRequestsScreen() {
-  const { data, addRequest, addComment } = useDemo();
+  const { data, addRequest, addComment, currentClientId } = usePortal();
   const colors = useColors();
   const [filter, setFilter] = useState('All');
   const [showComposer, setShowComposer] = useState(false);
@@ -673,7 +681,7 @@ export function ClientRequestsScreen() {
   const requests = useMemo(
     () =>
       data.requests
-        .filter((request) => request.clientId === 'northstar')
+        .filter((request) => request.clientId === currentClientId)
         .filter((request) => {
           if (filter === 'All') return true;
           if (filter === 'Open')
@@ -681,7 +689,7 @@ export function ClientRequestsScreen() {
           if (filter === 'Waiting') return request.status === 'Waiting for Client';
           return request.status === filter;
         }),
-    [data.requests, filter],
+    [currentClientId, data.requests, filter],
   );
 
   return (
@@ -757,7 +765,7 @@ export function ClientRequestsScreen() {
         visible={showComposer}
         onClose={() => setShowComposer(false)}
         onCreate={(title, description, type, priority) =>
-          addRequest(title, description, type, priority, 'northstar')
+          addRequest(title, description, type, priority)
         }
       />
     </>
@@ -768,7 +776,7 @@ function ChatBubble({
   message,
   mine,
 }: {
-  message: DemoMessage;
+  message: PortalMessage;
   mine: boolean;
 }) {
   const colors = useColors();
@@ -804,7 +812,7 @@ function ChatBubble({
         <Text
           style={[
             styles.bubbleTime,
-            { color: mine ? '#DAE9FF' : colors.mutedForeground },
+            { color: mine ? colors.primaryForeground : colors.mutedForeground },
           ]}
         >
           {message.time}
@@ -815,22 +823,22 @@ function ChatBubble({
 }
 
 export function ClientMessagesScreen() {
-  const { data, sendMessage, markMessagesRead } = useDemo();
+  const { data, sendMessage, markMessagesRead, currentClientId } = usePortal();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState('');
-  const client = data.clients.find((item) => item.id === 'northstar') ?? data.clients[0];
-  const messages = data.messages.filter((item) => item.clientId === 'northstar');
+  const client = data.clients.find((item) => item.id === currentClientId);
+  const messages = data.messages.filter((item) => item.clientId === currentClientId);
   const displayedMessages = [...messages].reverse();
 
   useEffect(() => {
-    markMessagesRead('northstar');
-  }, [markMessagesRead]);
+    if (currentClientId) markMessagesRead(currentClientId);
+  }, [currentClientId, markMessagesRead]);
 
   const send = () => {
     const body = draft.trim();
     if (!body) return;
-    sendMessage(body, 'client', 'northstar');
+    sendMessage(body, 'client');
     setDraft('');
   };
 
@@ -845,7 +853,7 @@ export function ClientMessagesScreen() {
         <ClientBrand />
         <View style={styles.chatContact}>
           <View style={styles.contactInfo}>
-            <Avatar initials="TB" size={38} />
+            <Avatar initials="B" size={38} />
             <View>
               <Text style={[styles.cardTitle, { color: colors.foreground }]}>
                 Bradyn support
@@ -928,9 +936,10 @@ export function ClientMessagesScreen() {
 }
 
 export function ClientAccountScreen() {
-  const { data, addRequest, signOut } = useDemo();
+  const { data, currentClientId, addRequest, signOut } = usePortal();
   const colors = useColors();
-  const client = data.clients.find((item) => item.id === 'northstar') ?? data.clients[0];
+  const { mode, toggleMode } = useThemeMode();
+  const client = data.clients.find((item) => item.id === currentClientId);
   const [notifications, setNotifications] = useState(true);
   if (!client) return null;
 
@@ -938,8 +947,8 @@ export function ClientAccountScreen() {
     Alert.alert(
       cancel ? 'Request cancellation?' : 'Request a plan change?',
       cancel
-        ? 'This adds a cancellation request for Bradyn to review. No subscription is changed in this demo.'
-        : 'This adds a plan-change request for Bradyn to review. No billing changes in this demo.',
+        ? 'This sends a cancellation request to the Bradyn team. Your subscription will not change until they confirm with you.'
+        : 'This sends a plan-change request to the Bradyn team. Your billing details will not change until you agree to a new plan.',
       [
         { text: 'Keep my plan', style: 'cancel' },
         {
@@ -953,10 +962,6 @@ export function ClientAccountScreen() {
               'Other',
               'Normal',
               client.id,
-            );
-            Alert.alert(
-              'Request added',
-              'Your subscription request is now in the Requests tab.',
             );
           },
         },
@@ -1001,7 +1006,9 @@ export function ClientAccountScreen() {
                 {client.subscriptionName}
               </Text>
               <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-                ${client.subscriptionPrice} / month
+                {client.subscriptionPrice === null
+                  ? 'No price configured'
+                  : `$${client.subscriptionPrice.toFixed(2)} / month`}
               </Text>
             </View>
           </View>
@@ -1052,20 +1059,28 @@ export function ClientAccountScreen() {
           </Pressable>
         </View>
         <View style={[styles.softDivider, { backgroundColor: colors.border }]} />
-        <View style={styles.preferenceRow}>
+        <Pressable
+          accessibilityRole="switch"
+          accessibilityState={{ checked: mode === 'light' }}
+          testID="appearance-toggle"
+          onPress={toggleMode}
+          style={styles.preferenceRow}
+        >
           <View style={[styles.preferenceIcon, { backgroundColor: colors.secondary }]}>
-            <Feather name="moon" size={16} color={colors.primary} />
+            <Feather name={mode === 'light' ? 'sun' : 'moon'} size={16} color={colors.primary} />
           </View>
           <View style={styles.preferenceCopy}>
             <Text style={[styles.cardTitle, { color: colors.foreground }]}>
-              Appearance
+              Light mode
             </Text>
             <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-              Dark · always on
+              {mode === 'light' ? 'On · dark mode is also available' : 'Off · dark mode is active'}
             </Text>
           </View>
-          <Feather name="check" size={17} color={colors.primary} />
-        </View>
+          <View style={[styles.switchTrack, { backgroundColor: mode === 'light' ? colors.primary : colors.secondary }]}>
+            <View style={[styles.switchThumb, mode === 'light' ? styles.switchThumbOn : null]} />
+          </View>
+        </Pressable>
         <View style={[styles.softDivider, { backgroundColor: colors.border }]} />
         <View style={styles.preferenceRow}>
           <View style={[styles.preferenceIcon, { backgroundColor: colors.secondary }]}>
@@ -1076,7 +1091,7 @@ export function ClientAccountScreen() {
               Security
             </Text>
             <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-              Demo access · no real account data
+              Sign-in and profile managed by Bradyn
             </Text>
           </View>
           <Feather name="chevron-right" size={17} color={colors.mutedForeground} />
@@ -1091,9 +1106,6 @@ export function ClientAccountScreen() {
           router.replace('/(auth)/login' as Href);
         }}
       />
-      <Text style={[styles.demoFootnote, { color: colors.mutedForeground }]}>
-        Bradyn demo · Sample details only
-      </Text>
     </Page>
   );
 }
@@ -1103,7 +1115,7 @@ const styles = StyleSheet.create({
   greetingBlock: { gap: 7, marginTop: 1 },
   greeting: { fontSize: 27, lineHeight: 33, fontFamily: 'Inter_700Bold', letterSpacing: -1.1 },
   greetingSub: { fontSize: 13, lineHeight: 19, fontFamily: 'Inter_400Regular' },
-  websiteHero: { padding: 18, gap: 16, borderColor: '#26334A' },
+  websiteHero: { padding: 18, gap: 16 },
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heroIcon: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   heroMain: { gap: 3 },
@@ -1138,7 +1150,6 @@ const styles = StyleSheet.create({
   activityTitle: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   activityDetail: { fontSize: 10, lineHeight: 15, fontFamily: 'Inter_400Regular' },
   activityTime: { fontSize: 9, fontFamily: 'Inter_500Medium' },
-  demoFootnote: { textAlign: 'center', fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: -7 },
   websiteDetails: { gap: 11 },
   websiteTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   bigIcon: { width: 46, height: 46, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },

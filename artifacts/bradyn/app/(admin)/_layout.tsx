@@ -8,6 +8,7 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Redirect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePortal } from '@/components/PortalProvider';
+import { useThemeMode } from '@/components/ThemeProvider';
 import { useColors } from '@/hooks/useColors';
 
 function NativeAdminTabs() {
@@ -39,6 +40,7 @@ function NativeAdminTabs() {
 
 function ClassicAdminTabs() {
   const colors = useColors();
+  const { mode } = useThemeMode();
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
@@ -71,14 +73,14 @@ function ClassicAdminTabs() {
           isIOS ? (
             <BlurView
               intensity={70}
-              tint="dark"
+              tint={mode === 'dark' ? 'dark' : 'light'}
               style={[StyleSheet.absoluteFill, { borderRadius: 25, overflow: 'hidden' }]}
             />
           ) : (
             <View
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: 'rgba(12,13,16,0.97)', borderRadius: 25 },
+                { backgroundColor: colors.card, borderRadius: 25 },
               ]}
             />
           ),

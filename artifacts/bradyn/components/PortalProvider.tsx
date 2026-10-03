@@ -187,7 +187,9 @@ function asNumber(value: unknown): number | null {
 
 function shortDate(value: unknown) {
   if (typeof value !== 'string' || !value) return 'Not set';
-  const date = new Date(value);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? new Date(`${value}T12:00:00`)
+    : new Date(value);
   return Number.isNaN(date.getTime())
     ? value
     : date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
@@ -237,8 +239,8 @@ function mapClient(row: DbRow, projects: PortalProject[]): PortalClient {
     email: asString(row.email),
     phone: asString(row.phone),
     websiteName: asString(row.website_name, asString(row.business)),
-    websiteUrl: asString(row.website_url),
-    previewUrl: asString(row.preview_url),
+    websiteUrl: asString(row.website_url, 'Not added') || 'Not added',
+    previewUrl: asString(row.preview_url, 'Not added') || 'Not added',
     websiteStatus: asString(row.website_status, 'Building') as PortalClient['websiteStatus'],
     subscriptionName: asString(row.subscription_name, 'Not configured'),
     subscriptionPrice: asNumber(row.subscription_price),
@@ -273,6 +275,9 @@ async function readPortalData(role: PortalRole): Promise<PortalData> {
   const projects = (projectsResult.data ?? []).map((row) => {
     const milestones = mapMilestones(row.milestones);
     const complete = milestones.filter((item) => item.complete).length;
+    const milestoneProgress = milestones.length
+      ? Math.round((complete / milestones.length) * 100)
+      : 0;
     return {
       id: asString(row.id),
       clientId: asString(row.client_id),
@@ -280,9 +285,7 @@ async function readPortalData(role: PortalRole): Promise<PortalData> {
       description: asString(row.description),
       status: asString(row.status, 'Planning'),
       stage: asString(row.stage, 'Planning'),
-      progress: milestones.length
-        ? Math.round((complete / milestones.length) * 100)
-        : 0,
+      progress: asNumber(row.progress) ?? milestoneProgress,
       updatedAt: relativeDate(row.updated_at),
       milestones,
     };
@@ -360,6 +363,13 @@ export function PortalProvider({ children }: PropsWithChildren) {
   const [initialized, setInitialized] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const operationId = useRef(0);
+
+  useEffect(() => {
+    // Remove the retired fictional dataset left by earlier app versions.
+    void AsyncStorage.removeItem('bradyn-demo-portal-v1').catch((error) => {
+      console.warn('Could not remove the retired local sample data.', error);
+    });
+  }, []);
 
   const loadSignedInUser = useCallback(async (authUser: User) => {
     const currentOperation = ++operationId.current;
@@ -568,7 +578,7 @@ export function PortalProvider({ children }: PropsWithChildren) {
         throw new Error('This account is not linked to a client record.');
       }
       const clientId = role === 'client'
-        ? profile.clientId
+        ? profile?.clientId
         : requestedClientId;
       if (!clientId) return { error: null };
       const readField = role === 'client' ? 'read_by_client' : 'read_by_admin';
@@ -589,7 +599,18 @@ export function PortalProvider({ children }: PropsWithChildren) {
     if (patch.description !== undefined) allowed.description = patch.description;
     if (patch.status !== undefined) allowed.status = patch.status;
     if (patch.stage !== undefined) allowed.stage = patch.stage;
-    if (patch.milestones !== undefined) allowed.milestones = patch.milestones;
+    if (patch.milestones !== undefined) {
+      allowed.milestones = patch.milestones;
+      if (patch.progress === undefined) {
+        const completedCount = patch.milestones.filter((item) => item.complete).length;
+        allowed.progress = patch.milestones.length
+          ? Math.round((completedCount / patch.milestones.length) * 100)
+          : 0;
+      }
+    }
+    if (patch.progress !== undefined) {
+      allowed.progress = Math.max(0, Math.min(100, Math.round(patch.progress)));
+    }
     return supabase.from('projects').update(allowed).eq('id', id);
   }), [runMutation]);
 
@@ -605,6 +626,7 @@ export function PortalProvider({ children }: PropsWithChildren) {
       description: description.trim(),
       status: 'Planning',
       stage: 'Planning',
+      progress: 0,
       milestones: [
         { id: `${id}-1`, title: 'Planning', complete: false },
         { id: `${id}-2`, title: 'Design', complete: false },
